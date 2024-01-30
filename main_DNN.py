@@ -42,7 +42,7 @@ train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
 # Instantiate the classifier
-input_size = len(train_dataset[0][0])
+input_size = len(train_dataset[0][0]) # It should be stored in logs
 
 # net = SimpleNet(input_size, hidden_size, num_classes)
 net = MLP_dropout(input_size, hidden_size, 2, num_classes, 0.1)
@@ -64,3 +64,10 @@ trainer = Trainer(net, train_loader, test_loader, criterion, optimizer, num_epoc
 
 # Train and test the model
 trainer.train()
+
+torch.save(
+    {
+    'model_state_dict': trainer.model.state_dict(),
+    'optimizer_state_dict': trainer.optimizer.state_dict(),
+    }, 
+    'results/dropout.pth')
