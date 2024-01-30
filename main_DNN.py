@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from models.dnn import SimpleNet, Trainer
+from models.dnn import SimpleNet, Trainer, MLP_dropout
 from datasets.buildings_dataset import Buildings
 ## Input data
 dataset_th_file = "datasets/subset_build_6kB_dataset.pth"
@@ -44,7 +44,9 @@ test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 # Instantiate the classifier
 input_size = len(train_dataset[0][0])
 
-net = SimpleNet(input_size, hidden_size, num_classes)
+# net = SimpleNet(input_size, hidden_size, num_classes)
+net = MLP_dropout(input_size, hidden_size, 2, num_classes, 0.1)
+
 
 # Define loss function and optimizer
 # criterion = FocalLoss()
