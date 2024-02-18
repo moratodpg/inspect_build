@@ -77,13 +77,18 @@ class FocalLoss(nn.Module):
 
 # Define a class for training and testing the classifier
 class Trainer:
-    def __init__(self, model, train_loader, test_loader, criterion, optimizer, num_epochs):
+    def __init__(self, model, train_loader, test_loader, criterion, optimizer, num_epochs, patience=30):
         self.model = model
         self.train_loader = train_loader
         self.test_loader = test_loader
         self.criterion = criterion
         self.optimizer = optimizer
         self.num_epochs = num_epochs
+        self.patience = patience
+        self.f1_score = 0
+        self.best_val_loss = float('inf')
+        self.epochs_without_improvement = 0
+        self.best_model = None
 
     def train(self):
         for epoch in range(self.num_epochs):
@@ -96,12 +101,43 @@ class Trainer:
                 loss.backward()
                 self.optimizer.step()
                 running_loss += loss.item()
+            avg_train_loss = running_loss / len(self.train_loader)
 
-            # Print average loss for the epoch
-            print(f"Epoch {epoch + 1}/{self.num_epochs}, Loss: {running_loss / len(self.train_loader)}")
+            # Evaluate the model on the test set to calculate validation loss
+            val_loss = self.evaluate()
 
-            # Test the model after each epoch
-            self.test()
+            # Early stopping check
+            # if val_loss < self.best_val_loss:
+                # self.best_val_loss = val_loss
+                # self.epochs_without_improvement = 0
+                # self.best_model = self.model
+                # print(f"Validation loss decreased to {val_loss:.4f}")
+            # else:
+            #     self.epochs_without_improvement += 1
+            #     #print(f"Validation loss did not decrease, count: {self.epochs_without_improvement}")
+            #     if self.epochs_without_improvement >= self.patience:
+            #         print("Early stopping triggered", ", Epoch: " ,epoch + 1)
+            #         self.test()
+            #         break
+
+            if epoch == (self.num_epochs - 1):
+                print(f"Epoch {epoch + 1}/{self.num_epochs}, Loss: {running_loss / len(self.train_loader)}")
+                # Print average loss for the epoch
+                # print(f"Epoch {epoch + 1}/{self.num_epochs}, Loss: {running_loss / len(self.train_loader)}")
+
+                # Test the model after each epoch
+                self.test()
+
+    def evaluate(self):
+        self.model.eval()  # Set the model to evaluation mode
+        total_val_loss = 0.0
+        with torch.no_grad():
+            for inputs, labels, _ in self.test_loader:
+                outputs = self.model(inputs)
+                loss = self.criterion(outputs, labels)
+                total_val_loss += loss.item()
+        avg_val_loss = total_val_loss / len(self.test_loader)
+        return avg_val_loss
 
     def test(self):
         self.model.eval()  # Set the model to evaluation mode
@@ -133,6 +169,7 @@ class Trainer:
         recall = TP / (TP + FN) if (TP + FN) > 0 else 0
         accuracy = (TP + TN) / total if total > 0 else 0
         f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
+        self.f1_score = f1_score
 
         # Print accuracy on the test set
         # accuracy = correct / total
