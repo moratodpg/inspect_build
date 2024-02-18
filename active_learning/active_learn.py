@@ -1,14 +1,19 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
 class ActiveLearning:
     def __init__(self, num_active_points):
         self.num_active_points = num_active_points
 
-    def get_active_points(self, trainer_current, num_forwards, buildings_dataset, idx_pool):
-        
-        criterion_item = trainer_current.criterion
-
+    def get_active_points(self, net_current, num_forwards, buildings_dataset, idx_pool):
+        loss_iterations = []
+        predictions = []
+        criterion_item = torch.nn.CrossEntropyLoss(reduction='none')
+        net_current.train()
         for i in range(num_forwards):
             with torch.no_grad():
-                predicted = trainer_current.best_model(buildings_dataset.input_tensor[idx_pool])
+                predicted = net_current(buildings_dataset.input_tensor[idx_pool])
                 # print(predicted.shape, predicted)
 
             target = buildings_dataset.output_tensor[idx_pool]
