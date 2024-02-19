@@ -86,7 +86,7 @@ class Trainer:
         self.num_epochs = num_epochs
         self.patience = patience
         self.f1_score = 0
-        self.best_val_loss = float('inf')
+        self.best_val_score = float('-inf')
         self.epochs_without_improvement = 0
         self.best_model = None
 
@@ -96,7 +96,7 @@ class Trainer:
             running_loss = 0.0
             for inputs, labels, _ in self.train_loader:
                 self.optimizer.zero_grad()
-                outputs = self.model(inputs)
+                outputs = self.model(inputs[:, :-22])
                 loss = self.criterion(outputs, labels)
                 loss.backward()
                 self.optimizer.step()
@@ -104,21 +104,21 @@ class Trainer:
             avg_train_loss = running_loss / len(self.train_loader)
 
             # Evaluate the model on the test set to calculate validation loss
-            val_loss = self.evaluate()
+            val_score = self.evaluate()
 
             # Early stopping check
-            # if val_loss < self.best_val_loss:
-                # self.best_val_loss = val_loss
-                # self.epochs_without_improvement = 0
-                # self.best_model = self.model
-                # print(f"Validation loss decreased to {val_loss:.4f}")
-            # else:
-            #     self.epochs_without_improvement += 1
-            #     #print(f"Validation loss did not decrease, count: {self.epochs_without_improvement}")
-            #     if self.epochs_without_improvement >= self.patience:
-            #         print("Early stopping triggered", ", Epoch: " ,epoch + 1)
-            #         self.test()
-            #         break
+            if val_score > self.best_val_score:
+                self.best_val_score = val_score
+                self.epochs_without_improvement = 0
+                self.best_model = self.model
+                print(f"Validation score is now: {val_score:.4f}")
+            else:
+                self.epochs_without_improvement += 1
+                #print(f"Validation loss did not decrease, count: {self.epochs_without_improvement}")
+                if self.epochs_without_improvement >= self.patience:
+                    print("Early stopping triggered", ", Epoch: " ,epoch + 1)
+                    self.test()
+                    break
 
             if epoch == (self.num_epochs - 1):
                 print(f"Epoch {epoch + 1}/{self.num_epochs}, Loss: {running_loss / len(self.train_loader)}")
@@ -130,23 +130,44 @@ class Trainer:
 
     def evaluate(self):
         self.model.eval()  # Set the model to evaluation mode
-        total_val_loss = 0.0
-        with torch.no_grad():
-            for inputs, labels, _ in self.test_loader:
-                outputs = self.model(inputs)
-                loss = self.criterion(outputs, labels)
-                total_val_loss += loss.item()
-        avg_val_loss = total_val_loss / len(self.test_loader)
-        return avg_val_loss
-
-    def test(self):
-        self.model.eval()  # Set the model to evaluation mode
         correct = 0
         total = 0
         TP, FP, TN, FN = 0, 0, 0, 0
         with torch.no_grad():
             for inputs, labels, _ in self.test_loader:
-                outputs = self.model(inputs)
+                outputs = self.model(inputs[:, :-22])
+                _, predicted_labels = torch.max(outputs, 1) 
+                total += labels.size(0)
+                correct += (predicted_labels == labels).sum().item()
+                
+                # Update TP, FP, TN, FN
+                for label, prediction in zip(labels, predicted_labels):
+                    # print(label, prediction)
+                    if label == 1 and prediction == 1:
+                        TP += 1
+                    elif label == 0 and prediction == 0:
+                        TN += 1
+                    elif label == 1 and prediction == 0:
+                        FN += 1
+                    elif label == 0 and prediction == 1:
+                        FP += 1
+                    # print(TP, TN, FN, FP)
+        
+        # Compute precision, recall, and accuracy
+        precision = TP / (TP + FP) if (TP + FP) > 0 else 0
+        recall = TP / (TP + FN) if (TP + FN) > 0 else 0
+        accuracy = (TP + TN) / total if total > 0 else 0
+        f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
+        return f1_score
+
+    def test(self):
+        self.best_model.eval()  # Set the model to evaluation mode
+        correct = 0
+        total = 0
+        TP, FP, TN, FN = 0, 0, 0, 0
+        with torch.no_grad():
+            for inputs, labels, _ in self.test_loader:
+                outputs = self.best_model(inputs[:, :-22])
                 _, predicted_labels = torch.max(outputs, 1) 
                 total += labels.size(0)
                 correct += (predicted_labels == labels).sum().item()
