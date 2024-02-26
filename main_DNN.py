@@ -6,10 +6,54 @@ import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
 import json
+import wandb
 
 from models.dnn import SimpleNet, Trainer, MLP_dropout
 from datasets.buildings_dataset import Buildings
 from active_learning.active_learn import ActiveLearning
+
+# Initialize wandb
+wandb.init(
+    project="inspect_build",
+    config={
+    "learning_rate": 0.01,
+    "hidden_size": 50,
+    "layers": 1,
+    "dropout_rate": 0.1,
+    }
+)
+
+# sweep_config = {
+#     'method': 'random',  # You can choose 'grid', 'random', or 'bayesian'
+#     'metric': {
+#       'name': 'f1_score',
+#       'goal': 'maximize'   
+#     },
+#     'parameters': {
+#         'learning_rate': {
+#             'min': 1e-5,
+#             'max': 1e-3
+#         },
+#         'batch_size': {
+#             'values': [16, 32, 64]
+#         },
+#         'hidden_size': {
+#             'values': [50, 100, 200]
+#         },
+#         'layers': {
+#             'values': [1, 2, 3]
+#         },
+#         'dropout_rate': {
+#             'min': 0.0,
+#             'max': 0.5
+#         }
+#     }
+# }
+
+
+
+# sweep_id = wandb.sweep(sweep_config, project="your_project_name", entity="your_wandb_username")
+
 
 ## Input data
 dataset_th_file = "datasets/subset_build_6kB_dataset.pth"
@@ -81,7 +125,7 @@ for i in range(num_active_iter):
 
     trainer.train()
     f1_score_AL.append(trainer.f1_score)
-    
+    wandb.log({"f1": trainer.f1_score})
     ## Loop
     idx_pool = pool_ds.indices
     idx_train = train_ds.indices
