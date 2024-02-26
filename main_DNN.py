@@ -26,6 +26,8 @@ num_classes = 2
 dropout_rate = 0.1
 # num_classes = 18
 
+mode = "active_learning" # "random"
+number_active_points = 1
 num_active_iter = 1000
 num_forwards = 100
 
@@ -60,7 +62,7 @@ print("Number of samples in the pool set: ", len(pool_ds))
 test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False)
 
 f1_score_AL = []
-active_learn = ActiveLearning(num_active_points=1)
+active_learn = ActiveLearning(num_active_points=number_active_points)
 
 for i in range(num_active_iter):
     print("Active learning iteration: ", i)
@@ -87,7 +89,10 @@ for i in range(num_active_iter):
     trainer.model.load_state_dict(trainer.best_model)
 
     ## Get active points
-    selected_idx_pool = active_learn.get_active_points(trainer.model, num_forwards, buildings_dataset, idx_pool)
+    if mode == "random":
+        selected_idx_pool = active_learn.get_random_points(idx_pool)
+    else:
+        selected_idx_pool = active_learn.get_active_points(trainer.model, num_forwards, buildings_dataset, idx_pool)
     
     ## Updated indices based on selected samples
     idx_pool_ = [idx for idx in idx_pool if idx not in selected_idx_pool]
