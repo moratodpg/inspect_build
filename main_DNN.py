@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
+import json
 
 from models.dnn import SimpleNet, Trainer, MLP_dropout
 from datasets.buildings_dataset import Buildings
@@ -28,6 +29,7 @@ dropout_rate = 0.1
 num_active_iter = 1000
 num_forwards = 100
 
+filename = "f1_score_01"
 
 # Assuming you have created a Buildings dataset instance named buildings_dataset
 buildings_dataset = torch.load(dataset_th_file)
@@ -96,3 +98,8 @@ for i in range(num_active_iter):
     pool_ds = torch.utils.data.dataset.Subset(buildings_dataset, idx_pool_) 
 
     print(len(pool_ds), len(train_ds))
+
+# Storing results
+filename_id = filename + ".json"
+with open(filename_id, 'w') as f:
+    json.dump(f1_score_AL, f)
