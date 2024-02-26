@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -51,3 +52,11 @@ class ActiveLearning:
         selected_idx_pool = [idx_pool[i] for i in selected_ind]
 
         return selected_idx_pool
+    
+    def get_random_points(self, idx_pool):
+        # create a list of random numbers as integers from 0 to len(idx_pool)
+        n_active_points = self.num_active_points
+        random_idx_pool = np.random.choice(idx_pool, n_active_points, replace=False)
+        random_idx_pool = random_idx_pool.tolist()
+        return random_idx_pool
+         
