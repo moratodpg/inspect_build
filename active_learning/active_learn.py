@@ -13,7 +13,7 @@ class ActiveLearning:
         net_current.train()
         for i in range(num_forwards):
             with torch.no_grad():
-                predicted = net_current(buildings_dataset.input_tensor[idx_pool])
+                predicted = net_current(buildings_dataset.input_tensor[idx_pool][:, :-22])
                 # print(predicted.shape, predicted)
 
             target = buildings_dataset.output_tensor[idx_pool]

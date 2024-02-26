@@ -1,6 +1,8 @@
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
+import copy
+
 
 # Define a simple neural network for classification
 class SimpleNet(nn.Module):
@@ -110,8 +112,8 @@ class Trainer:
             if val_score > self.best_val_score:
                 self.best_val_score = val_score
                 self.epochs_without_improvement = 0
-                self.best_model = self.model
-                print(f"Validation score is now: {val_score:.4f}")
+                self.best_model = copy.deepcopy(self.model.state_dict())
+                # print(f"Validation score is now: {val_score:.4f}")
             else:
                 self.epochs_without_improvement += 1
                 #print(f"Validation loss did not decrease, count: {self.epochs_without_improvement}")
@@ -161,13 +163,14 @@ class Trainer:
         return f1_score
 
     def test(self):
-        self.best_model.eval()  # Set the model to evaluation mode
+        self.model.load_state_dict(self.best_model)
+        self.model.eval()  # Set the model to evaluation mode
         correct = 0
         total = 0
         TP, FP, TN, FN = 0, 0, 0, 0
         with torch.no_grad():
             for inputs, labels, _ in self.test_loader:
-                outputs = self.best_model(inputs[:, :-22])
+                outputs = self.model(inputs[:, :-22])
                 _, predicted_labels = torch.max(outputs, 1) 
                 total += labels.size(0)
                 correct += (predicted_labels == labels).sum().item()
