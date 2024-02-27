@@ -37,6 +37,7 @@ def training_loop(config=None):
         number_active_points = config.active_points
         num_active_iter = config.active_iterations
         num_forwards = config.num_forwards
+        w_decay = config.weight_decay
 
         # filename = "f1_score_01"
 
@@ -101,7 +102,7 @@ def training_loop(config=None):
             input_size = 384 # Only considering aerial images
             net = MLP_dropout(input_size, hidden_size, layers, num_classes, dropout_rate)
             criterion = nn.CrossEntropyLoss()
-            optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+            optimizer = optim.Adam(net.parameters(), lr=learning_rate, weight_decay=w_decay)
             trainer = Trainer(net, train_loader, test_loader, criterion, optimizer, num_epochs, patience=400)
 
             trainer.train()
