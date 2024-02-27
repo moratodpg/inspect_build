@@ -1,6 +1,9 @@
 # Results
 results/
 
+# Logs wandb
+wandb/
+
 # torch files
 *.pth 
 
