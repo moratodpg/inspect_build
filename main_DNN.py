@@ -6,10 +6,22 @@ import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
 import json
+import wandb
 
 from models.dnn import SimpleNet, Trainer, MLP_dropout
 from datasets.buildings_dataset import Buildings
 from active_learning.active_learn import ActiveLearning
+
+# # Initialize wandb
+# wandb.init(
+#     project="inspect_build",
+#     config={
+#     "learning_rate": 0.01,
+#     "hidden_size": 50,
+#     "layers": 1,
+#     "dropout_rate": 0.1,
+#     }
+# )
 
 ## Input data
 dataset_th_file = "datasets/subset_build_6kB_dataset.pth"
@@ -47,8 +59,26 @@ num_pool = total_samples - num_train - num_test
 # np.random.seed(42)  # Uncomment to make the selection reproducible
 # indices = np.random.choice(len(buildings_dataset), downscaled_size, replace=False)
 
+### Split the dataset into training, testing, and pool sets and store the indices
 # Use random_split to split the dataset into training and testing sets
-train_ds, test_ds, pool_ds = random_split(buildings_dataset, [num_train, num_test, num_pool])
+# train_ds, test_ds, pool_ds = random_split(buildings_dataset, [num_train, num_test, num_pool])
+
+# # Storing the indices of the datasets
+# subset_build = {}
+# subset_build["train"] = train_ds.indices
+# subset_build["test"] = test_ds.indices
+# subset_build["pool"] = pool_ds.indices
+
+# with open("datasets/subset_build_6kB_indices.json", 'w') as f:
+#     json.dump(subset_build, f)
+
+### Load the indices
+with open("datasets/subset_build_6kB_indices.json", 'r') as f:
+    subset_build = json.load(f)
+
+train_ds = Subset(buildings_dataset, subset_build["train"])
+test_ds = Subset(buildings_dataset, subset_build["test"])
+pool_ds = Subset(buildings_dataset, subset_build["pool"])
 
 print("Number of samples in the training set: ", len(train_ds))
 print("Number of samples in the testing set: ", len(test_ds))
@@ -81,7 +111,7 @@ for i in range(num_active_iter):
 
     trainer.train()
     f1_score_AL.append(trainer.f1_score)
-    
+    # wandb.log({"f1": trainer.f1_score}, step=i)
     ## Loop
     idx_pool = pool_ds.indices
     idx_train = train_ds.indices
