@@ -69,7 +69,7 @@ def training_loop(config=None):
         #     json.dump(subset_build, f)
 
         ### Load the indices
-        with open("datasets/subset_build_6kB_indices.json", 'r') as f:
+        with open("datasets/subset_6kB_indices_a.json", 'r') as f:
             subset_build = json.load(f)
 
         train_ds = Subset(buildings_dataset, subset_build["train"])
@@ -115,10 +115,12 @@ def training_loop(config=None):
             trainer.model.load_state_dict(trainer.best_model)
 
             ## Get active points
-            if mode == "random":
-                selected_idx_pool = active_learn.get_random_points(idx_pool)
-            else:
+            if mode == "active_learning":
                 selected_idx_pool = active_learn.get_active_points(trainer.model, num_forwards, buildings_dataset, idx_pool)
+            elif mode == "multiple_active_learning":
+                selected_idx_pool = active_learn.get_multiple_active_points(trainer.model, num_forwards, buildings_dataset, idx_pool)
+            else:
+                selected_idx_pool = active_learn.get_random_points(idx_pool)
             
             ## Updated indices based on selected samples
             idx_pool_ = [idx for idx in idx_pool if idx not in selected_idx_pool]
