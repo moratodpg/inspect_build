@@ -117,6 +117,8 @@ def training_loop(config=None):
             ## Get active points
             if mode == "random":
                 selected_idx_pool = active_learn.get_random_points(idx_pool)
+            elif mode == "multiple_active":
+                selected_idx_pool = active_learn.get_multiple_active_points(trainer.model, num_forwards, buildings_dataset, idx_pool)
             else:
                 selected_idx_pool = active_learn.get_active_points(trainer.model, num_forwards, buildings_dataset, idx_pool)
             
